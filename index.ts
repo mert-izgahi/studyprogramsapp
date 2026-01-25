@@ -47,7 +47,7 @@ async function basicExample() {
         // Apply filters like in your screenshot
         console.log('Applying filters...');
         await scraper.applyFilters({
-            program: 'Dentistry (English)',
+            // program: 'Dentistry (English)',
             // Add other filters as needed
         });
 

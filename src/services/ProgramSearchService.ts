@@ -590,24 +590,26 @@ export class ProgramSearchService {
                 return;
             }
 
-            // Find and click page link using page.evaluate
-            const clicked = await this.page.evaluate((targetPage) => {
-                const links = Array.from(document.querySelectorAll('.pagination li:not(.first):not(.previous):not(.next):not(.last) a'));
-                const targetLink = links.find((link) => link.textContent?.trim() === targetPage.toString());
+            console.log(`Attempting to navigate from page ${pagination.currentPage} to page ${pageNumber}`);
 
-                if (targetLink) {
-                    (targetLink as HTMLElement).click();
+            // Strategy 1: Try clicking directly using page.evaluate (most reliable)
+            const clicked = await this.page.evaluate((targetPage) => {
+                // Try finding by exact page number text first
+                const links = Array.from(document.querySelectorAll('.pagination li a'));
+                const targetLink = links.find((link) => {
+                    const text = link.textContent?.trim();
+                    return text === targetPage.toString();
+                });
+
+                if (targetLink && targetLink instanceof HTMLElement) {
+                    targetLink.click();
                     return true;
                 }
 
-                // Try alternative approach - find by page number in href
-                const hrefLinks = Array.from(document.querySelectorAll('.pagination a'));
-                const hrefTarget = hrefLinks.find((link) =>
-                    link.getAttribute('href')?.includes(`page=${targetPage}`)
-                );
-
-                if (hrefTarget) {
-                    (hrefTarget as HTMLElement).click();
+                // Try next button if moving forward
+                const nextBtn = document.querySelector('.pagination .next a, .pagination li.next a, [aria-label="Next"]');
+                if (nextBtn && nextBtn instanceof HTMLElement) {
+                    nextBtn.click();
                     return true;
                 }
 
@@ -615,27 +617,62 @@ export class ProgramSearchService {
             }, pageNumber);
 
             if (clicked) {
-                await this.wait(3000);
-                console.log(`Navigated to page ${pageNumber}`);
-            } else {
-                console.log(`Page ${pageNumber} not found in pagination, trying next/previous buttons...`);
-                // Try using next/previous buttons
-                const currentPage = pagination.currentPage;
-                if (pageNumber > currentPage) {
-                    const nextBtn = await this.page.$('.pagination .next a');
-                    if (nextBtn) {
-                        await nextBtn.click();
-                        await this.wait(3000);
-                    }
-                } else {
-                    const prevBtn = await this.page.$('.pagination .previous a');
-                    if (prevBtn) {
-                        await prevBtn.click();
-                        await this.wait(3000);
-                    }
-                }
+                // Wait for page to load
+                await this.wait(2000);
+                // Wait for content to update
+                await this.page.waitForFunction(
+                    (expectedPage) => {
+                        const pageInfo = document.querySelector('#page-info');
+                        return pageInfo?.textContent?.includes(`Page ${expectedPage}`);
+                    },
+                    { timeout: 10000 },
+                    pageNumber
+                ).catch(() => {
+                    console.log('Page info did not update, continuing anyway...');
+                });
+                await this.wait(1000);
+                console.log(`Successfully navigated to page ${pageNumber}`);
+                return;
             }
+
+            // Strategy 2: Use sequential next button clicking for nearby pages
+            const currentPage = pagination.currentPage;
+            if (pageNumber > currentPage && pageNumber - currentPage <= 3) {
+                console.log('Using next button navigation...');
+                for (let i = currentPage; i < pageNumber; i++) {
+                    const success = await this.page.evaluate(() => {
+                        const selectors = [
+                            '.pagination .next a',
+                            '.pagination li.next a',
+                            'a[aria-label="Next"]',
+                            '.pagination a[rel="next"]',
+                        ];
+
+                        for (const selector of selectors) {
+                            const btn = document.querySelector(selector);
+                            if (btn && btn instanceof HTMLElement) {
+                                btn.click();
+                                return true;
+                            }
+                        }
+                        return false;
+                    });
+
+                    if (!success) {
+                        throw new Error('Next button not found');
+                    }
+
+                    await this.wait(2000);
+                }
+                console.log(`Successfully navigated to page ${pageNumber} using next button`);
+                return;
+            }
+
+            throw new Error('Could not find pagination controls');
         } catch (error) {
+            console.error(`Error navigating to page ${pageNumber}:`, error);
+            // Take screenshot for debugging
+            await this.takeScreenshot(`pagination-error-page-${pageNumber}.png`);
             throw new ScraperError(
                 ScraperErrorType.NAVIGATION_ERROR,
                 `Failed to navigate to page ${pageNumber}`,
