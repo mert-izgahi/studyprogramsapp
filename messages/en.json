@@ -1,0 +1,22 @@
+{
+    "HomePage": {
+        "title": "Welcome to Our Platform",
+        "description": "A multi-language platform supporting English and Arabic",
+        "aboutLink": "About Us",
+        "contactLink": "Contact Us",
+        "featuresTitle": "Features",
+        "feature1": "Full RTL support for Arabic",
+        "feature2": "SEO optimized URLs",
+        "feature3": "Automatic locale detection"
+    },
+    "Navigation": {
+        "home": "Home",
+        "about": "About",
+        "contact": "Contact"
+    },
+    "Common": {
+        "welcome": "Welcome",
+        "loading": "Loading...",
+        "error": "An error occurred"
+    }
+}
