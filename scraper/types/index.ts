@@ -29,10 +29,12 @@ export interface LoginOptions extends BrowserConfig {
  */
 export interface Program {
     id: string;
+    termId: string;
     programName: string;
-    alternativeProgramName: string;
+    alternativeProgramName?: string;
     universityName: string;
     universityId: string;
+    universityLogo: string;
     programDegree: string;
     language: string;
     campus: string;
@@ -40,7 +42,7 @@ export interface Program {
     discountedTuitionFee: number;
     currency: string;
     depositPrice: number;
-    prepSchoolFee: number;
+    prepSchoolFee?: number;
     cashPaymentFee?: string;
     quotaFull: boolean;
     semester: string;

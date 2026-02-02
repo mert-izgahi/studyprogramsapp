@@ -7,6 +7,7 @@ export interface IProgram extends Document {
     alternativeProgramName?: string;
     universityName: string;
     universityId: string;
+    universityLogo: string;
     programDegree: string;
     language: string;
     campus: string;
@@ -59,6 +60,10 @@ const ProgramSchema = new Schema<IProgram>({
         type: String,
         required: true,
         index: true,
+    },
+    universityLogo: {
+        type: String,
+        trim: true,
     },
     programDegree: {
         type: String,

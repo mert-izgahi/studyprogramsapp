@@ -379,6 +379,9 @@ export class ProgramSearchService {
     /**
      * Scrape programs from current page
      */
+    /**
+ * Scrape programs from current page
+ */
     async scrapeCurrentPage(): Promise<Program[]> {
         try {
             console.log('Scraping programs from current page...');
@@ -418,15 +421,29 @@ export class ProgramSearchService {
                     return el?.textContent?.trim() || '';
                 };
 
+                const getAttribute = (card: Element, selector: string, attr: string): string => {
+                    const el = card.querySelector(selector);
+                    return el?.getAttribute(attr)?.trim() || '';
+                };
+
                 const getNumericValue = (text: string): number => {
                     const match = text?.match(/[\d,.]+/);
                     return match ? parseFloat(match[0].replace(/,/g, '')) : 0;
                 };
 
                 return cards.map((card) => {
+                    // Try different selectors for university logo
+                    const universityLogo =
+                        getAttribute(card, '.plan-header img', 'src') ||
+                        getAttribute(card, '.plan-header .plan-price img', 'src') ||
+                        getAttribute(card, '.card-header img', 'src') ||
+                        getAttribute(card, '.university-logo img', 'src') ||
+                        '';
+
                     // Try different selectors for university name
                     const universityName =
                         getText(card, '.plan-header h4:nth-of-type(2)') ||
+                        getText(card, '.plan-header h4:not(:first-of-type)') ||
                         getText(card, '.plan-header h4') ||
                         getText(card, '.card-header h4') ||
                         getText(card, '.university-name') ||
@@ -488,6 +505,7 @@ export class ProgramSearchService {
                         programName,
                         alternativeProgramName,
                         universityName,
+                        universityLogo, // Added university logo
                         universityId: getDataAttr('university'),
                         programDegree: getDataAttr('degreec'),
                         language: getDataAttr('lang'),
