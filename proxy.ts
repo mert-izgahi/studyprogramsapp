@@ -1,10 +1,9 @@
+// ./proxy.ts
 import { auth } from '@/lib/auth';
 import createMiddleware from 'next-intl/middleware';
 import { routing } from './i18n/routing';
 import { NextResponse } from 'next/server';
 import { configs } from './config';
-
-
 
 // ============================================================================
 // INTERNATIONALIZATION MIDDLEWARE
@@ -89,8 +88,19 @@ export default auth((req: any) => {
     const { pathname } = req.nextUrl;
 
     // Extract locale and clean pathname
-    const locale = getLocale(pathname) || 'en';
+    const locale = getLocale(pathname) || configs.intlConfig.defaultLocale;
     const cleanPathname = removeLocalePrefix(pathname, getLocale(pathname));
+
+    // Debug logging (remove in production)
+    if (process.env.NODE_ENV === 'development') {
+        console.log('🔍 Middleware Debug:', {
+            pathname,
+            cleanPathname,
+            locale,
+            isAuthenticated: !!req.auth,
+            userRole: req.auth?.user?.role,
+        });
+    }
 
     // Get authentication state
     const isAuthenticated = !!req.auth;
@@ -102,14 +112,22 @@ export default auth((req: any) => {
     const isPublicRoute = matchesRoutes(cleanPathname, configs.routeConfig.public);
 
     if (isPublicRoute) {
-        // Redirect authenticated users away from auth pages
-        if (isAuthenticated && [configs.authUrls.signIn, configs.authUrls.signUp].includes(cleanPathname)) {
+        // Special handling for auth pages - redirect authenticated users
+        const authPages = [
+            configs.authUrls.signIn,
+            configs.authUrls.signUp,
+            configs.authUrls.forgotPassword,
+        ];
+
+        if (isAuthenticated && authPages.includes(cleanPathname)) {
+            console.log('✅ Authenticated user on auth page, redirecting to:', configs.authUrls.afterSignIn);
             return NextResponse.redirect(
-                createRedirectUrl(req.url, '/', locale)
+                createRedirectUrl(req.url, configs.authUrls.afterSignIn, locale)
             );
         }
 
         // Allow access to public routes
+        console.log('✅ Public route, allowing access');
         return intlMiddleware(req);
     }
 
@@ -117,6 +135,7 @@ export default auth((req: any) => {
     // 2. Check authentication for protected routes
     // -------------------------------------------------------------------------
     if (!isAuthenticated) {
+        console.log('❌ Not authenticated, redirecting to sign-in');
         return NextResponse.redirect(
             createRedirectUrl(req.url, configs.authUrls.signIn, locale, pathname)
         );
@@ -128,6 +147,7 @@ export default auth((req: any) => {
     const isAdminRoute = matchesRoutes(cleanPathname, configs.routeConfig.admin);
 
     if (isAdminRoute && userRole !== 'admin') {
+        console.log('❌ Admin route but user is not admin');
         return NextResponse.redirect(
             createRedirectUrl(req.url, configs.authUrls.unauthorized, locale)
         );
@@ -139,6 +159,7 @@ export default auth((req: any) => {
     const isStaffRoute = matchesRoutes(cleanPathname, configs.routeConfig.staff);
 
     if (isStaffRoute && userRole !== 'admin' && userRole !== 'staff') {
+        console.log('❌ Staff route but user is not staff or admin');
         return NextResponse.redirect(
             createRedirectUrl(req.url, configs.authUrls.unauthorized, locale)
         );
@@ -147,6 +168,7 @@ export default auth((req: any) => {
     // -------------------------------------------------------------------------
     // 5. Apply internationalization
     // -------------------------------------------------------------------------
+    console.log('✅ All checks passed, applying i18n middleware');
     return intlMiddleware(req);
 });
 
