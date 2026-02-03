@@ -2,7 +2,7 @@ import React from 'react'
 
 function RootHeader() {
     return (
-        <div>RootHeader</div>
+        <div className='w-full h-16 bg-muted'>RootHeader</div>
     )
 }
 

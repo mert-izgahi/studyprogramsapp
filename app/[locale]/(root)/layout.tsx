@@ -1,8 +1,12 @@
+import RootHeader from '@/components/layouts/root-header'
 import React, { PropsWithChildren } from 'react'
 
 function layout({ children }: PropsWithChildren) {
     return (
-        <div>{children}</div>
+        <div className='h-full'>
+            <RootHeader />
+            {children}
+        </div>
     )
 }
 
