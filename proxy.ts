@@ -3,7 +3,9 @@ import { auth } from '@/lib/auth';
 import createMiddleware from 'next-intl/middleware';
 import { routing } from './i18n/routing';
 import { NextResponse } from 'next/server';
-import { configs } from './config';
+import { routeConfig,intlConfig, authUrls } from './config';
+
+
 
 // ============================================================================
 // INTERNATIONALIZATION MIDDLEWARE
@@ -11,8 +13,8 @@ import { configs } from './config';
 
 const intlMiddleware = createMiddleware({
     locales: routing.locales,
-    defaultLocale: configs.intlConfig.defaultLocale,
-    localePrefix: configs.intlConfig.localePrefix,
+    defaultLocale: intlConfig.defaultLocale,
+    localePrefix: intlConfig.localePrefix,
 });
 
 // ============================================================================
@@ -87,21 +89,12 @@ function createRedirectUrl(
 export default auth((req: any) => {
     const { pathname } = req.nextUrl;
 
+
     // Extract locale and clean pathname
-    const locale = getLocale(pathname) || configs.intlConfig.defaultLocale;
+    const locale = getLocale(pathname) || 'en';
     const cleanPathname = removeLocalePrefix(pathname, getLocale(pathname));
-
-    // Debug logging (remove in production)
-    if (process.env.NODE_ENV === 'development') {
-        console.log('🔍 Middleware Debug:', {
-            pathname,
-            cleanPathname,
-            locale,
-            isAuthenticated: !!req.auth,
-            userRole: req.auth?.user?.role,
-        });
-    }
-
+    
+    
     // Get authentication state
     const isAuthenticated = !!req.auth;
     const userRole = req.auth?.user?.role;
@@ -109,25 +102,17 @@ export default auth((req: any) => {
     // -------------------------------------------------------------------------
     // 1. Check if route is public
     // -------------------------------------------------------------------------
-    const isPublicRoute = matchesRoutes(cleanPathname, configs.routeConfig.public);
+    const isPublicRoute = matchesRoutes(cleanPathname, routeConfig.public);
 
     if (isPublicRoute) {
-        // Special handling for auth pages - redirect authenticated users
-        const authPages = [
-            configs.authUrls.signIn,
-            configs.authUrls.signUp,
-            configs.authUrls.forgotPassword,
-        ];
-
-        if (isAuthenticated && authPages.includes(cleanPathname)) {
-            console.log('✅ Authenticated user on auth page, redirecting to:', configs.authUrls.afterSignIn);
+        // Redirect authenticated users away from auth pages
+        if (isAuthenticated && [authUrls.signIn, authUrls.signUp].includes(cleanPathname)) {
             return NextResponse.redirect(
-                createRedirectUrl(req.url, configs.authUrls.afterSignIn, locale)
+                createRedirectUrl(req.url, '/', locale)
             );
         }
 
         // Allow access to public routes
-        console.log('✅ Public route, allowing access');
         return intlMiddleware(req);
     }
 
@@ -135,40 +120,37 @@ export default auth((req: any) => {
     // 2. Check authentication for protected routes
     // -------------------------------------------------------------------------
     if (!isAuthenticated) {
-        console.log('❌ Not authenticated, redirecting to sign-in');
+
         return NextResponse.redirect(
-            createRedirectUrl(req.url, configs.authUrls.signIn, locale, pathname)
+            createRedirectUrl(req.url, authUrls.signIn, locale, pathname)
         );
     }
 
     // -------------------------------------------------------------------------
     // 3. Check admin routes
     // -------------------------------------------------------------------------
-    const isAdminRoute = matchesRoutes(cleanPathname, configs.routeConfig.admin);
+    const isAdminRoute = matchesRoutes(cleanPathname, routeConfig.admin);
 
     if (isAdminRoute && userRole !== 'admin') {
-        console.log('❌ Admin route but user is not admin');
         return NextResponse.redirect(
-            createRedirectUrl(req.url, configs.authUrls.unauthorized, locale)
+            createRedirectUrl(req.url, authUrls.unauthorized, locale)
         );
     }
 
     // -------------------------------------------------------------------------
     // 4. Check staff routes (staff or admin)
     // -------------------------------------------------------------------------
-    const isStaffRoute = matchesRoutes(cleanPathname, configs.routeConfig.staff);
+    const isStaffRoute = matchesRoutes(cleanPathname, routeConfig.staff);
 
     if (isStaffRoute && userRole !== 'admin' && userRole !== 'staff') {
-        console.log('❌ Staff route but user is not staff or admin');
         return NextResponse.redirect(
-            createRedirectUrl(req.url, configs.authUrls.unauthorized, locale)
+            createRedirectUrl(req.url, authUrls.unauthorized, locale)
         );
     }
 
     // -------------------------------------------------------------------------
     // 5. Apply internationalization
     // -------------------------------------------------------------------------
-    console.log('✅ All checks passed, applying i18n middleware');
     return intlMiddleware(req);
 });
 

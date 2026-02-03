@@ -1,3 +1,4 @@
+@import "../node_modules/flag-icons/css/flag-icons.min.css";
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -43,10 +44,16 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
+
+  /* THEME COLORS */
+  --color-gold: var(--gold);
+  --color-pine: var(--pine);
+  --color-carbon: var(--carbon);
+  --color-gray: var(--gray);
 }
 
 :root {
-  --radius: 0.625rem;
+  --radius: 0.25rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -78,6 +85,12 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /* THEME COLORS */
+  --gold: #E2C044;
+  --pine: #587B7F;
+  --carbon: #1E2019;
+  --gray: #D3D0CB;
 }
 
 .dark {
@@ -118,17 +131,10 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-default), system-ui, sans-serif;
   }
 }
 
-*,
-html,
-body {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  height: 100%;
-}

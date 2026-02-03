@@ -5,6 +5,7 @@ import { routing } from "@/i18n/routing";
 import { notFound } from "next/navigation";
 import { getMessages } from "next-intl/server";
 import { NextIntlClientProvider } from "next-intl";
+import Providers from "@/providers";
 
 const font = IBM_Plex_Sans_Arabic({
     subsets: ["latin"],
@@ -17,6 +18,9 @@ const font = IBM_Plex_Sans_Arabic({
 export const metadata: Metadata = {
     title: "JoodyStudy",
     description: "JoodyStudy is a platform for students to find and apply for study programs in Türkiye.",
+    icons: {
+        icon: "/logo.svg",
+    }
 };
 type Props = {
     children: React.ReactNode;
@@ -40,12 +44,11 @@ export default async function LocaleLayout({
 
     const bodyClasses = [
         font.className,
-        locale === 'ar' ? 'font-arabic' : '',
         'antialiased'
     ].filter(Boolean).join(' ');
 
     return (
-        <html lang={locale} dir={locale === 'ar' ? 'rtl' : 'ltr'}>
+        <html lang={locale} dir={locale === 'ar' ? 'rtl' : 'ltr'} suppressHydrationWarning>
             <body
                 className={bodyClasses}
             >
@@ -54,7 +57,9 @@ export default async function LocaleLayout({
                     messages={messages}
                     timeZone="Asia/Riyadh"
                 >
-                    {children}
+                    <Providers>
+                        {children}
+                    </Providers>
                 </NextIntlClientProvider>
             </body>
         </html>
