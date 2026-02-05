@@ -36,7 +36,7 @@ export default function RootHeader() {
             href: "/",
         },
         {
-            title: locale === "en" ? "Available Programs" : "البرامج المتاحة",
+            title: locale === "en" ? "Programs" : "البرامج",
             href: "/programs",
         },
         {

@@ -1,3 +1,4 @@
+// models/FavoriteList.ts
 import mongoose, { Schema, Document, Model } from "mongoose";
 
 export interface IFavoriteList extends Document {

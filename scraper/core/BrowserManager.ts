@@ -1,6 +1,6 @@
 import puppeteer, { Browser, Page } from 'puppeteer';
-import type { BrowserConfig } from '../types';
-import { ScraperError, ScraperErrorType } from '../types';
+import type { BrowserConfig } from '@/types';
+import { ScraperError, ScraperErrorType } from '@/types';
 
 /**
  * Base class for managing Puppeteer browser lifecycle

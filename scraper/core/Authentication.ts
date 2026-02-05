@@ -1,6 +1,6 @@
 import { BrowserManager } from './BrowserManager';
-import type { LoginCredentials, LoginOptions } from '../types';
-import { ScraperError, ScraperErrorType } from '../types';
+import type { LoginCredentials, LoginOptions, } from '@/types';
+import { ScraperError, ScraperErrorType } from '@/types';
 
 /**
  * Service for handling authentication with United Education platform

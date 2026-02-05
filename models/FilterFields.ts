@@ -1,4 +1,5 @@
-import mongoose, { Schema, model, models, Document } from "mongoose";
+// models/FilterFields.ts
+import mongoose, { Schema, Document } from "mongoose";
 
 export interface IFilterFields extends Document {
     termId: string;
@@ -14,7 +15,8 @@ export interface IFilterFields extends Document {
 
 export interface IFilterFieldsModelType extends mongoose.Model<IFilterFields> {
     findFilterFields(termId: string): Promise<IFilterFields | null>;
-    updateFilterFields(termId: string, data: Partial<IFilterFields>): Promise<IFilterFields>;
+    upsertFilterFields(termId: string, data: Partial<IFilterFields>): Promise<IFilterFields>;
+    addFilterValues(termId: string, field: string, values: string[]): Promise<IFilterFields | null>;
 }
 
 const FilterFieldsSchema = new Schema<IFilterFields>({
@@ -57,21 +59,71 @@ FilterFieldsSchema.statics.findFilterFields = async function (termId: string) {
     return this.findOne({ termId });
 };
 
-FilterFieldsSchema.statics.updateFilterFields = async function (termId: string, data: Partial<IFilterFields>) {
-    const filterFields = await this.findOne({ termId });
-    if (!filterFields) return null;
-    Object.assign(filterFields, data);
-    await filterFields.save();
-    return filterFields;
+FilterFieldsSchema.statics.upsertFilterFields = async function (
+    termId: string,
+    data: Partial<IFilterFields>
+) {
+    // Remove duplicates from arrays
+    const cleanData: any = { termId };
+    
+    if (data.universities) {
+        cleanData.universities = Array.from(new Set(data.universities));
+    }
+    if (data.programs) {
+        cleanData.programs = Array.from(new Set(data.programs));
+    }
+    if (data.degrees) {
+        cleanData.degrees = Array.from(new Set(data.degrees));
+    }
+    if (data.languages) {
+        cleanData.languages = Array.from(new Set(data.languages));
+    }
+    if (data.campuses) {
+        cleanData.campuses = Array.from(new Set(data.campuses));
+    }
+
+    cleanData.lastUpdated = new Date();
+
+    return this.findOneAndUpdate(
+        { termId },
+        { $set: cleanData },
+        {
+            upsert: true,
+            new: true,
+            runValidators: true,
+        }
+    );
+};
+
+FilterFieldsSchema.statics.addFilterValues = async function (
+    termId: string,
+    field: string,
+    values: string[]
+) {
+    const validFields = ['universities', 'programs', 'degrees', 'languages', 'campuses'];
+    
+    if (!validFields.includes(field)) {
+        throw new Error(`Invalid field: ${field}`);
+    }
+
+    const uniqueValues = Array.from(new Set(values));
+
+    return this.findOneAndUpdate(
+        { termId },
+        {
+            $addToSet: {
+                [field]: { $each: uniqueValues },
+            },
+            $set: { lastUpdated: new Date() },
+        },
+        { new: true, upsert: true }
+    );
 };
 
 function createFilterFieldsModel(): IFilterFieldsModelType {
-    // Check if the model already exists
     if (mongoose.models && mongoose.models.FilterFields) {
         return mongoose.models.FilterFields as IFilterFieldsModelType;
     }
-
-    // Create new model if it doesn't exist
     return mongoose.model<IFilterFields, IFilterFieldsModelType>("FilterFields", FilterFieldsSchema);
 }
 

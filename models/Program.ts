@@ -1,3 +1,4 @@
+// models/Program.ts
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface IProgram extends Document {
@@ -28,8 +29,10 @@ export interface IProgram extends Document {
 }
 
 export interface ProgramModelType extends mongoose.Model<IProgram> {
-    findProgram(termId: string, programId: string): Promise<IProgram | null>
-    findProgramsByTerm(termId: string): Promise<IProgram[] | null>
+    findProgram(termId: string, programId: string): Promise<IProgram | null>;
+    findProgramsByTerm(termId: string): Promise<IProgram[]>;
+    upsertProgram(data: Partial<IProgram>): Promise<IProgram>;
+    bulkUpsertPrograms(programs: Partial<IProgram>[]): Promise<{ upsertedCount: number; modifiedCount: number }>;
 }
 
 const ProgramSchema = new Schema<IProgram>({
@@ -49,6 +52,10 @@ const ProgramSchema = new Schema<IProgram>({
         required: true,
         trim: true,
         index: "text",
+    },
+    alternativeProgramName: {
+        type: String,
+        trim: true,
     },
     universityName: {
         type: String,
@@ -93,7 +100,6 @@ const ProgramSchema = new Schema<IProgram>({
     },
     currency: {
         type: String,
-        required: true,
         default: "USD",
     },
     depositPrice: {
@@ -139,6 +145,7 @@ const ProgramSchema = new Schema<IProgram>({
     timestamps: true,
 });
 
+// Compound indexes
 ProgramSchema.index({ termId: 1, programId: 1 }, { unique: true });
 ProgramSchema.index({ termId: 1, universityName: 1 });
 ProgramSchema.index({ termId: 1, programDegree: 1 });
@@ -151,25 +158,63 @@ ProgramSchema.index({
     alternativeProgramName: "text",
 });
 
-
+// Static methods
 ProgramSchema.statics.findProgram = function (termId: string, programId: string) {
     return this.findOne({ termId, programId });
 };
 
 ProgramSchema.statics.findProgramsByTerm = function (termId: string) {
-    return this.find({ termId });
+    return this.find({ termId, isActive: true });
 };
 
+ProgramSchema.statics.upsertProgram = async function (data: Partial<IProgram>) {
+    const { termId, programId } = data;
+    
+    if (!termId || !programId) {
+        throw new Error("termId and programId are required for upsert");
+    }
+
+    return this.findOneAndUpdate(
+        { termId, programId },
+        {
+            ...data,
+            lastScraped: new Date(),
+        },
+        {
+            upsert: true,
+            new: true,
+            runValidators: true,
+        }
+    );
+};
+
+ProgramSchema.statics.bulkUpsertPrograms = async function (programs: Partial<IProgram>[]) {
+    const bulkOps = programs.map(program => ({
+        updateOne: {
+            filter: { termId: program.termId, programId: program.programId },
+            update: {
+                $set: {
+                    ...program,
+                    lastScraped: new Date(),
+                },
+            },
+            upsert: true,
+        },
+    }));
+
+    const result = await this.bulkWrite(bulkOps);
+    
+    return {
+        upsertedCount: result.upsertedCount || 0,
+        modifiedCount: result.modifiedCount || 0,
+    };
+};
 
 function createProgramModel(): ProgramModelType {
-    // Check if the model already exists
     if (mongoose.models && mongoose.models.Program) {
         return mongoose.models.Program as ProgramModelType;
     }
-
-    // Create new model if it doesn't exist
     return mongoose.model<IProgram, ProgramModelType>("Program", ProgramSchema);
 }
 
 export const Program = createProgramModel();
-
