@@ -10,12 +10,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { useLocale } from "next-intl"
 
 export function ColorModeToggle() {
   const { setTheme } = useTheme()
-
+  const locale = useLocale()
   return (
-    <DropdownMenu>
+    <DropdownMenu dir={locale === "ar" ? "rtl" : "ltr"}>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="icon">
           <Sun className="h-[1.2rem] w-[1.2rem] scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90" />
@@ -23,15 +24,15 @@ export function ColorModeToggle() {
           <span className="sr-only">Toggle theme</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
+      <DropdownMenuContent  align={locale === "ar" ? "end" : "start"}>
         <DropdownMenuItem onClick={() => setTheme("light")}>
-          Light
+          {locale === "ar" ? "الوضع الفاتح" : "Light"}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("dark")}>
-          Dark
+          {locale === "ar" ? "الوضع الداكن" : "Dark"}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("system")}>
-          System
+          {locale === "ar" ? "الوضع الافتراضي" : "System"}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

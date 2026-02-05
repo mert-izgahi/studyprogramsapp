@@ -15,7 +15,9 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
+import { useSession } from "next-auth/react";
+import { signOut } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 type NavLink = {
     title: string;
@@ -25,7 +27,9 @@ type NavLink = {
 export default function RootHeader() {
     const locale = useLocale();
     const pathname = usePathname();
-
+    const { data, status } = useSession();
+    const isLoading = status === "loading";
+    const isAuthenticated = status === "authenticated" && !!data?.user;
     const links: NavLink[] = [
         {
             title: locale === "en" ? "Home" : "الرئيسية",
@@ -52,6 +56,11 @@ export default function RootHeader() {
         }
 
         return pathname.startsWith(href);
+    }
+    
+    function handleSignOut() {
+        if (isLoading) return;
+        signOut();
     }
 
     return (
@@ -88,16 +97,30 @@ export default function RootHeader() {
 
                         {/* Desktop Auth Buttons */}
                         <div className="hidden md:flex items-center gap-2">
-                            <Button variant="gold" asChild>
-                                <Link href="/sign-in">
-                                    {locale === "en" ? "Login" : "تسجيل الدخول"}
-                                </Link>
-                            </Button>
-                            <Button variant="ghost" asChild>
-                                <Link href="/sign-up">
-                                    {locale === "en" ? "Sign Up" : "إنشاء حساب"}
-                                </Link>
-                            </Button>
+                            {!isAuthenticated && <>
+                                <Button variant="gold" asChild>
+                                    <Link href="/sign-in">
+                                        {locale === "en" ? "Login" : "تسجيل الدخول"}
+                                    </Link>
+                                </Button>
+                                <Button variant="ghost" asChild>
+                                    <Link href="/sign-up">
+                                        {locale === "en" ? "Sign Up" : "إنشاء حساب"}
+                                    </Link>
+                                </Button>
+                            </>}
+
+                            {isAuthenticated && <>
+                                <Button variant="gold" asChild>
+                                    <Link href="/profile">
+                                        {locale === "en" ? "Profile" : "الملف الشخصي"}
+                                    </Link>
+                                </Button>
+
+                                <Button variant="ghost" type="button" onClick={handleSignOut}>
+                                    {locale === "en" ? "Logout" : "تسجيل الخروج"}
+                                </Button>
+                            </>}
                         </div>
 
                         {/* Mobile Menu */}

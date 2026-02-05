@@ -12,7 +12,8 @@ export const routeConfig = {
         '/contact',
         '/terms',
         '/privacy',
-
+        '/programs',
+        '/programs/[id]',
         // AUTH ROUTES - MUST BE PUBLIC! (Fixed the redirect loop)
         '/sign-in',
         '/sign-up',

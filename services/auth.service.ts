@@ -1,9 +1,8 @@
 import { auth } from '@/lib/auth';
 import dbConnect from '@/lib/mongoose';
-import { User } from '@/models/User';
+import { IUser, User } from '@/models/User';
 import bcrypt from 'bcryptjs';
-import { AuthError } from 'next-auth';
-
+import { UpdateProfileSchema, type SignUpSchema } from '@/validations/auth';
 export interface CreateUserData {
     email: string;
     password: string;
@@ -138,7 +137,7 @@ export class AuthService {
     /**
      * Create a new user (registration)
      */
-    static async createUser(data: CreateUserData) {
+    static async createUser(data: SignUpSchema): Promise<IUser> {
         try {
             await dbConnect();
 
@@ -162,15 +161,13 @@ export class AuthService {
                 password: hashedPassword,
                 firstName: data.firstName,
                 lastName: data.lastName,
-                role: data.role || 'user',
-                imageUrl: data.imageUrl,
+                role: 'user',
                 isActive: true,
             });
 
             // Return user without password
-            const userObject = user.toObject() as any;
-            userObject!.password = undefined;
-
+            const userObject = user.toObject();
+            delete userObject.password;
             return userObject;
         } catch (error) {
             console.error('Error creating user:', error);
@@ -221,20 +218,48 @@ export class AuthService {
         }
     }
 
+
+    /**
+     * Soft Delete User
+     * */
+    static async softDeleteUser(userId: string) {
+        try {
+            await dbConnect();
+            const user = await User.findByIdAndUpdate(userId,{ $set: { isActive: false } }, { new: true }).select('-password');
+            if (!user) {
+                throw new Error('User not found');
+            }
+            return { success: true };
+        } catch (error) {
+            console.error('Error deleting user:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Soft Delete Current User
+     */
+    static async softDeleteCurrentUser() {
+        try {
+            const session = await auth();
+            if (!session?.user?.id) {
+                throw new Error('Not authenticated');
+            }
+            return this.softDeleteUser(session.user.id);
+        } catch (error) {
+            console.error('Error deleting current user:', error);
+            throw error;
+        }
+    }
     /**
      * Update current user's profile
      */
-    static async updateCurrentUser(data: UpdateUserData) {
+    static async updateCurrentUser(data: UpdateProfileSchema) {
         try {
             const session = await auth();
 
             if (!session?.user?.id) {
                 throw new Error('Not authenticated');
-            }
-
-            // Users can't change their own role
-            if (data.role) {
-                delete data.role;
             }
 
             return this.updateUser(session.user.id, data);
@@ -259,7 +284,7 @@ export class AuthService {
             }
 
             // Verify current password
-            const isPasswordValid = await bcrypt.compare(data.currentPassword, user.password);
+            const isPasswordValid = await bcrypt.compare(data.currentPassword, user.password!);
 
             if (!isPasswordValid) {
                 throw new Error('Current password is incorrect');

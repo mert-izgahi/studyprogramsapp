@@ -52,7 +52,7 @@ const FilterFieldsSchema = new Schema<IFilterFields>({
 }, {
     timestamps: true,
 });
-FilterFieldsSchema.index({ termId: 1 });
+
 FilterFieldsSchema.statics.findFilterFields = async function (termId: string) {
     return this.findOne({ termId });
 };

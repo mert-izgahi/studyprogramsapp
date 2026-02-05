@@ -42,6 +42,15 @@ export class UnitedEducationScraper {
     }
 
     /**
+     * Get the program search service instance
+     * Useful for accessing methods directly
+     */
+    getProgramSearchService(): ProgramSearchService {
+        this.ensureProgramSearchService();
+        return this.programSearchService!;
+    }
+
+    /**
      * Navigate to program search and select term
      */
     async setupProgramSearch(termName?: string): Promise<string> {
@@ -51,6 +60,16 @@ export class UnitedEducationScraper {
         const termId = await this.programSearchService!.selectTerm(termName);
 
         return termId;
+    }
+
+    /**
+     * Get available terms
+     */
+    async getAvailableTerms(): Promise<{ value: string; text: string }[]> {
+        this.ensureProgramSearchService();
+        
+        await this.programSearchService!.navigateToProgramSearch();
+        return this.programSearchService!.getAvailableTerms();
     }
 
     /**

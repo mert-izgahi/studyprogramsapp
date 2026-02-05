@@ -4,15 +4,7 @@ import bcrypt from "bcryptjs"
 import { User } from "@/models/User"
 import dbConnect from "@/lib/mongoose"
 
-// Remove the MongoDB adapter and client connection if you're using Mongoose
-// Since you're using Mongoose, you don't need the MongoDB adapter
-// The adapter is for when you want NextAuth to handle user creation/sessions in MongoDB
-// But you're handling authentication yourself with credentials provider
-
-export const { handlers, signIn, signOut, auth } = NextAuth({
-    // Remove the adapter line if you're only using credentials provider
-    // adapter: MongoDBAdapter(clientPromise),
-
+export const authOptions = {
     providers: [
         Credentials({
             name: "credentials",
@@ -21,48 +13,54 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 password: { label: "Password", type: "password" }
             },
             async authorize(credentials) {
-                const { email, password } = credentials as {
-                    email: string
-                    password: string
-                }
+                try {
+                    const { email, password } = credentials as {
+                        email: string
+                        password: string
+                    }
 
-                if (!email || !password) {
+                    if (!email || !password) {
+                        return null
+                    }
+
+                    await dbConnect()
+
+                    const user = await User.findOne({ email }).select('+password')
+
+                    if (!user || !user.password || !user.isActive) {
+                        return null
+                    }
+
+                    const isPasswordValid = await bcrypt.compare(password, user.password)
+
+                    if (!isPasswordValid) {
+                        return null
+                    }
+
+                    return {
+                        id: user._id.toString(),
+                        email: user.email,
+                        name: `${user.firstName} ${user.lastName}`,
+                        image: user.imageUrl, // Note: use 'image' not 'imageUrl'
+                        role: user.role
+                    }
+                } catch (error) {
+                    console.error("Authorization error:", error)
                     return null
-                }
-
-                await dbConnect()
-
-                const user = await User.findOne({ email }).select('+password')
-
-                if (!user || !user.password || !user.isActive) {
-                    return null
-                }
-
-                const isPasswordValid = await bcrypt.compare(password, user.password)
-
-                if (!isPasswordValid) {
-                    return null
-                }
-
-                return {
-                    id: user._id.toString(),
-                    email: user.email,
-                    name: `${user.firstName} ${user.lastName}`,
-                    imageUrl: user.imageUrl,
-                    role: user.role
                 }
             }
         })
     ],
     session: {
-        strategy: "jwt",
+        strategy: "jwt" as const,
+        maxAge: 30 * 24 * 60 * 60, // 30 days
     },
     callbacks: {
         async jwt({ token, user }: any) {
             if (user) {
                 token.id = user.id
                 token.role = user.role
-                token.imageUrl = user.imageUrl
+                token.picture = user.image // Map image to picture
             }
             return token
         },
@@ -70,7 +68,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             if (token && session.user) {
                 session.user.id = token.id as string
                 session.user.role = token.role as string
-                session.user.imageUrl = token.imageUrl as string
+                session.user.image = token.picture as string
             }
             return session
         },
@@ -78,5 +76,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     secret: process.env.NEXTAUTH_SECRET,
     pages: {
         signIn: "/sign-in",
+        error: "/sign-in", // Add error page
     },
-})
+    debug: process.env.NODE_ENV === "development",
+}
+
+// Export handlers and auth function
+export const { handlers, signIn, signOut, auth } = NextAuth(authOptions)

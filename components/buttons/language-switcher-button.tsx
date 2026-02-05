@@ -22,7 +22,7 @@ export function LanguageSwitcherDropdown() {
     }
 
     return (
-        <DropdownMenu>
+        <DropdownMenu dir={locale === "ar" ? "rtl" : "ltr"}>
             <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="icon" aria-label="Switch language">
                     <Languages className="h-5 w-5" />

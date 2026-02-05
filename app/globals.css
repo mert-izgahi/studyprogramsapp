@@ -47,13 +47,16 @@
 
   /* THEME COLORS */
   --color-gold: var(--gold);
+  --color-gold-foreground: oklch(0.145 0 0);
   --color-pine: var(--pine);
+  --color-pine-foreground: oklch(0.145 0 0);
   --color-carbon: var(--carbon);
+  --color-carbon-foreground: oklch(1 0 0);
   --color-gray: var(--gray);
 }
 
 :root {
-  --radius: 0.25rem;
+  --radius: 0.8rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -137,4 +140,3 @@
     font-family: var(--font-default), system-ui, sans-serif;
   }
 }
-

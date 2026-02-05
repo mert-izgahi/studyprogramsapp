@@ -19,7 +19,9 @@ const buttonVariants = cva(
         ghost:
           "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
         link: "text-primary underline-offset-4 hover:underline",
-        gold: "bg-gold text-gold-foreground hover:bg-gold/90",
+        gold: `bg-gold text-gold-foreground hover:bg-gold/90 border-t border-r border-b-4 border-l-4 border-gray-800 focus:border-b focus:border-l`,
+        pine: `bg-pine text-pine-foreground hover:bg-pine/90 border-t border-r border-b-4 border-l-4 border-gray-800 focus:border-b focus:border-l`,
+        carbon: `bg-carbon text-carbon-foreground hover:bg-carbon/90 `,
       },
       size: {
         default: "h-9 px-4 py-2 has-[>svg]:px-3",

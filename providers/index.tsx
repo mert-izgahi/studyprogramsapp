@@ -2,6 +2,7 @@
 
 import React, { PropsWithChildren } from 'react'
 import { ThemeProvider } from './theme-provider';
+import { SessionProvider } from 'next-auth/react';
 
 function Providers({
     children,
@@ -13,7 +14,9 @@ function Providers({
             enableSystem
             disableTransitionOnChange
         >
-            {children}
+            <SessionProvider>
+                {children}
+            </SessionProvider>
         </ThemeProvider>
     )
 }

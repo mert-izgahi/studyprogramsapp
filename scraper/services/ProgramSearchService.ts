@@ -73,6 +73,33 @@ export class ProgramSearchService {
     }
 
     /**
+     * Get GetAvailable Terms
+     * */
+    async getAvailableTerms(): Promise<{ value: string; text: string }[]> {
+        try {
+            // Try alternative approach - log available terms for debugging
+            const availableTerms = await this.page.evaluate(() => {
+                const radioButtons = document.querySelectorAll('input[name="radio_buttons_2"]');
+                return Array.from(radioButtons).map(radio => {
+                    const radioId = radio.getAttribute('id');
+                    const label = radioId ? document.querySelector(`label[for="${radioId}"]`) : null;
+                    return {
+                        value: (radio as HTMLInputElement).value,
+                        text: label?.textContent?.trim() || '',
+                    };
+                });
+            });
+            return availableTerms;
+        } catch (error) {
+            throw new ScraperError(
+                ScraperErrorType.SCRAPING_ERROR,
+                'Failed to get available terms',
+                error as Error
+            );
+        }
+    }
+
+    /**
      * Select term (academic period)
      */
     async selectTerm(termName: string = 'Fall 2026-2027'): Promise<string> {
@@ -169,6 +196,15 @@ export class ProgramSearchService {
                 languages: await this.extractSelectOptions(ProgramSearchService.SELECTORS.FILTERS.LANGUAGE),
                 campuses: await this.extractSelectOptions(ProgramSearchService.SELECTORS.FILTERS.CAMPUS),
             };
+
+            // Remove duplicates
+            filterFields.universities = Array.from(new Set(filterFields.universities));
+            filterFields.programs = Array.from(new Set(filterFields.programs));
+            filterFields.degrees = Array.from(new Set(filterFields.degrees));
+            filterFields.languages = Array.from(new Set(filterFields.languages));
+            filterFields.campuses = Array.from(new Set(filterFields.campuses));
+
+            
 
             console.log('Filter fields extracted successfully');
             console.log('Universities:', filterFields.universities.length);

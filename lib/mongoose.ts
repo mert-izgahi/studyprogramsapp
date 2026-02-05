@@ -2,7 +2,7 @@
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 
-dotenv.config();
+dotenv.config({ path: "../.env" });
 
 
 const MONGODB_URI = process.env.MONGODB_URI;
@@ -43,10 +43,10 @@ async function dbConnect(): Promise<typeof mongoose> {
 
     if (!cached.promise) {
         const opts = {
-            bufferCommands: false,
-            connectTimeoutMS: 30000,
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
+            // bufferCommands: false,
+            // connectTimeoutMS: 30000,
+            // useNewUrlParser: true,
+            // useUnifiedTopology: true,
             // Add other Mongoose options if needed
         };
 

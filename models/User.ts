@@ -1,8 +1,9 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
+import bcrypt from "bcryptjs";
 
 export interface IUser extends Document {
     email: string;
-    password: string;
+    password?: string;
     firstName: string;
     lastName: string;
     phone?: string;
@@ -112,7 +113,7 @@ const UserSchema = new Schema<IUser>(
     },
 );
 
-UserSchema.index({ email: 1 });
+
 
 UserSchema.methods.findByCredentials = async function (
     email: string,
