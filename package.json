@@ -20,6 +20,7 @@
     "dotenv": "^17.2.3",
     "embla-carousel-react": "^8.6.0",
     "flag-icons": "^7.5.0",
+    "hono": "^4.11.9",
     "input-otp": "^1.4.2",
     "lucide-react": "^0.563.0",
     "mongoose": "^9.1.5",

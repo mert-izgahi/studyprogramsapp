@@ -8,6 +8,8 @@
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import readline from "readline";
+import { User } from "@/models/User";
+import { hashPassword } from "@/lib/hash-password";
 
 // Load environment variables
 require("dotenv").config({ path: "../.env" });
@@ -33,11 +35,12 @@ async function createAdminUser() {
         await mongoose.connect(MONGODB_URI);
         console.log("✅ Connected to MongoDB");
 
-        const name = await question("Enter admin name: ");
+        const firstName = await question("Enter admin first Name: ");
+        const lastName = await question("Enter admin last Name: ");
         const email = await question("Enter admin email: ");
         const password = await question("Enter admin password: ");
 
-        if (!name || !email || !password) {
+        if (!firstName || !lastName || !email || !password) {
             console.error("❌ All fields are required");
             process.exit(1);
         }
@@ -53,16 +56,7 @@ async function createAdminUser() {
             process.exit(1);
         }
 
-        const User = mongoose.model(
-            "User",
-            new mongoose.Schema({
-                email: String,
-                password: String,
-                name: String,
-                role: String,
-            }),
-        );
-
+        // Check if user with the same email already exists
         const existingUser = await User.findOne({ email: email.toLowerCase() });
         if (existingUser) {
             console.error("❌ User with this email already exists");
@@ -70,11 +64,12 @@ async function createAdminUser() {
         }
 
         console.log("🔐 Hashing password...");
-        const hashedPassword = await bcrypt.hash(password, 10);
+        const hashedPassword = await hashPassword(password);
 
         console.log("👤 Creating admin user...");
         const adminUser = new User({
-            name,
+            firstName,
+            lastName,
             email: email.toLowerCase(),
             password: hashedPassword,
             role: "admin",

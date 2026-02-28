@@ -1,17 +1,18 @@
 import { DefaultSession, DefaultUser } from "next-auth"
+import { ContextUser } from "."
 
 declare module "next-auth" {
   interface Session {
-    user: {
-      id: string
-      role: string
-      imageUrl?: string
-    } & DefaultSession["user"]
+    user: ContextUser & DefaultSession["user"]
   }
 
   interface User extends DefaultUser {
-    role: string
+    id: string
+    email: string
+    name: string
     imageUrl?: string
+    role: "user" | "staff" | "admin"
+    isVerified: boolean
   }
 }
 

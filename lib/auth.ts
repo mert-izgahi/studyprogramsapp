@@ -3,7 +3,8 @@ import Credentials from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
 import { User } from "@/models/User"
 import dbConnect from "@/lib/mongoose"
-
+import { ContextUser } from "@/types";
+import { Next, Context } from "hono"
 export const authOptions = {
     providers: [
         Credentials({
@@ -26,15 +27,15 @@ export const authOptions = {
                     await dbConnect()
 
                     const user = await User.findOne({ email }).select('+password')
-
+                    console.log(user)
                     if (!user || !user.password || !user.isActive) {
-                        return null
+                        throw new Error("Invalid credentials");
                     }
 
                     const isPasswordValid = await bcrypt.compare(password, user.password)
 
                     if (!isPasswordValid) {
-                        return null
+                        throw new Error("Invalid credentials");
                     }
 
                     return {
@@ -42,7 +43,8 @@ export const authOptions = {
                         email: user.email,
                         name: `${user.firstName} ${user.lastName}`,
                         image: user.imageUrl, // Note: use 'image' not 'imageUrl'
-                        role: user.role
+                        role: user.role,
+                        isVerified: user.isVerified
                     }
                 } catch (error) {
                     console.error("Authorization error:", error)
@@ -81,5 +83,46 @@ export const authOptions = {
     debug: process.env.NODE_ENV === "development",
 }
 
+
+
+
 // Export handlers and auth function
 export const { handlers, signIn, signOut, auth } = NextAuth(authOptions)
+
+
+export async function authenticate(c: Context, next: Next) {
+    const session = await auth();
+
+    console.log('Checking authentication for request:', {
+        method: c.req.method,
+        url: c.req.url,
+    });
+
+    if (!session || !session.user) {
+        c.set("user", null);
+        return c.json({ success: false, message: "Unauthorized", data: null }, 401)
+    }
+
+    // Attach user info to context
+    c.set("user", {
+        id: session.user.id,
+        email: session.user.email,
+        name: session.user.name,
+        imageUrl: session.user.imageUrl,
+        role: session.user.role as "user" | "staff" | "admin",
+        isVerified: session.user.isVerified,
+    } as ContextUser)
+    return next()
+}
+
+export function authorize(roles: ("user" | "staff" | "admin")[]) {
+    return async (c: Context, next: Next) => {
+        const user = c.get("user") as ContextUser | null;
+
+        if (!user || (roles.length > 0 && !roles.includes(user.role))) {
+            return c.json({ message: "Forbidden", success: false, result: null, }, 403);
+        }
+
+        return next();
+    };
+}

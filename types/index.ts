@@ -5,8 +5,6 @@
  */
 
 import { IProgram } from "@/models/Program";
-import { IFilterFields } from "@/models/FilterFields";
-
 // ============================================================================
 // SCRAPER TYPES
 // ============================================================================
@@ -23,6 +21,8 @@ export interface BrowserConfig {
         height: number;
     };
     userAgent?: string;
+    maxRetries?: number;
+    delayBetweenRequests?: number;
 }
 
 /**
@@ -85,6 +85,8 @@ export enum ScraperErrorType {
     ELEMENT_NOT_FOUND = 'ELEMENT_NOT_FOUND',
 }
 
+
+
 export class ScraperError extends Error {
     constructor(
         public type: ScraperErrorType,
@@ -108,7 +110,7 @@ export interface ProgramScrapingType {
     programName: string;
     alternativeProgramName: string;
     universityName: string;
-    universityLogo:string;
+    universityLogo: string;
     universityId: string;
     programDegree: string;
     language: string;
@@ -331,5 +333,11 @@ export interface ApiErrorResponse {
 // ============================================================================
 // RE-EXPORTS FROM MODELS (for convenience)
 // ============================================================================
-
-export type { IProgram, IFilterFields };
+export type ContextUser = {
+    id: string;
+    email: string;
+    name: string;
+    imageUrl?: string;
+    role: "user" | "staff" | "admin";
+    isVerified: boolean;
+};

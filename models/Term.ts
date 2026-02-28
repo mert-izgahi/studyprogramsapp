@@ -26,7 +26,6 @@ const TermSchema = new Schema<ITerm>(
             type: String,
             required: true,
             unique: true,
-            index: true,
         },
         name: {
             type: String,
@@ -41,12 +40,10 @@ const TermSchema = new Schema<ITerm>(
         isActive: {
             type: Boolean,
             default: true,
-            index: true,
         },
         isScraped: {
             type: Boolean,
             default: false,
-            index: true,
         },
         programCount: {
             type: Number,
@@ -62,10 +59,6 @@ const TermSchema = new Schema<ITerm>(
     }
 );
 
-// Indexes for better query performance
-TermSchema.index({ isActive: 1, isScraped: 1 });
-TermSchema.index({ academicYear: 1 });
-TermSchema.index({ createdAt: -1 });
 
 // Static methods
 TermSchema.statics.findActiveTerm = function () {

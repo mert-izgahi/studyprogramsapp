@@ -2,24 +2,11 @@ import { auth } from '@/lib/auth';
 import dbConnect from '@/lib/mongoose';
 import { IUser, User } from '@/models/User';
 import bcrypt from 'bcryptjs';
-import { UpdateProfileSchema, type SignUpSchema } from '@/validations/auth';
-export interface CreateUserData {
-    email: string;
-    password: string;
-    firstName: string;
-    lastName: string;
-    role?: 'user' | 'staff' | 'admin';
-    imageUrl?: string;
-}
+import { UpdateProfileSchema, UpdateUserSchema, type SignUpSchema } from '@/validations/auth';
+import { hashPassword, comparePassword } from '@/lib/hash-password';
 
-export interface UpdateUserData {
-    firstName?: string;
-    lastName?: string;
-    email?: string;
-    imageUrl?: string;
-    role?: 'user' | 'staff' | 'admin';
-    isActive?: boolean;
-}
+
+
 
 export interface ChangePasswordData {
     currentPassword: string;
@@ -61,6 +48,17 @@ export class AuthService {
         }
     }
 
+    static async getAdminUser() {
+        try {
+            await dbConnect();
+
+            const adminUser = await User.findOne({ role: 'admin' }).select('-password');
+            return adminUser;
+        } catch (error) {
+            console.error('Error getting admin user:', error);
+            return null;
+        }
+    }
     /**
      * Get user by ID
      */
@@ -153,7 +151,7 @@ export class AuthService {
             }
 
             // Hash password
-            const hashedPassword = await bcrypt.hash(data.password, 10);
+            const hashedPassword = await hashPassword(data.password);
 
             // Create user
             const user = await User.create({
@@ -178,7 +176,7 @@ export class AuthService {
     /**
      * Update user profile
      */
-    static async updateUser(userId: string, data: UpdateUserData) {
+    static async updateUser(userId: string, data: UpdateUserSchema): Promise<IUser> {
         try {
             await dbConnect();
 
@@ -225,7 +223,7 @@ export class AuthService {
     static async softDeleteUser(userId: string) {
         try {
             await dbConnect();
-            const user = await User.findByIdAndUpdate(userId,{ $set: { isActive: false } }, { new: true }).select('-password');
+            const user = await User.findByIdAndUpdate(userId, { $set: { isActive: false } }, { new: true }).select('-password');
             if (!user) {
                 throw new Error('User not found');
             }

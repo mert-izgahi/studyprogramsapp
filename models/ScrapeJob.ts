@@ -1,183 +1,79 @@
 // models/ScrapeJob.ts
-import mongoose, { Schema, Model, Document } from "mongoose";
+import mongoose, { Schema, Document } from "mongoose";
 
-export type ScrapeStatus = "pending" | "running" | "completed" | "failed" | "cancelled";
+export interface IScrapeJobLog {
+    message: string;
+    level: "info" | "warn" | "error";
+    timestamp: Date;
+}
 
 export interface IScrapeJob extends Document {
-    termId: string;
+    termId: string;           // the raw term value from the scraper radio (e.g. "1")
     termName: string;
-    status: ScrapeStatus;
+    userId: string;
+    status: "pending" | "running" | "completed" | "failed";
     startedAt?: Date;
     completedAt?: Date;
-    programsScraped: number;
-    filterFieldsScraped: boolean;
-    universitiesProcessed: number;
+    programCount?: number;
     error?: string;
-    logs: Array<{
-        timestamp: Date;
-        message: string;
-        level: "info" | "warn" | "error";
-    }>;
-    progress: {
-        currentPage: number;
-        totalPages: number;
-        percentage: number;
-    };
-    initiatedBy: mongoose.Types.ObjectId;
+    logs: IScrapeJobLog[];
     createdAt: Date;
     updatedAt: Date;
 }
 
-export interface IScrapeJobModelType extends Model<IScrapeJob> {
-    findScrapeJob(termId: string): Promise<IScrapeJob | null>;
-    findActiveScrapeJob(): Promise<IScrapeJob | null>;
-    updateScrapeJob(termId: string, data: Partial<IScrapeJob>): Promise<IScrapeJob | null>;
-    addLog(termId: string, message: string, level?: "info" | "warn" | "error"): Promise<IScrapeJob | null>;
-    updateProgress(termId: string, currentPage: number, totalPages: number): Promise<IScrapeJob | null>;
+export interface ScrapeJobModelType extends mongoose.Model<IScrapeJob> {
+    addLog(termId: string, message: string, level?: "info" | "warn" | "error"): Promise<void>;
 }
 
-const ScrapeJobSchema = new Schema<IScrapeJob>({
-    termId: {
-        type: String,
-        required: true,
-        unique: true,
-        index: true,
-        ref: "Term",
-    },
-    termName: {
-        type: String,
-        required: true,
-    },
-    status: {
-        type: String,
-        required: true,
-        enum: ["pending", "running", "completed", "failed", "cancelled"],
-        default: "pending",
-        index: true,
-    },
-    startedAt: {
-        type: Date,
-    },
-    completedAt: {
-        type: Date,
-    },
-    programsScraped: {
-        type: Number,
-        default: 0,
-    },
-    filterFieldsScraped: {
-        type: Boolean,
-        default: false,
-    },
-    universitiesProcessed: {
-        type: Number,
-        default: 0,
-    },
-    error: {
-        type: String,
-    },
-    logs: [{
-        timestamp: {
-            type: Date,
-            default: Date.now,
-        },
-        message: String,
-        level: {
+const ScrapeJobSchema = new Schema<IScrapeJob>(
+    {
+        termId: { type: String, required: true },
+        termName: { type: String, required: true },
+        userId: { type: String, required: true, default: "system" },
+        status: {
             type: String,
-            enum: ["info", "warn", "error"],
-            default: "info",
+            enum: ["pending", "running", "completed", "failed"],
+            default: "pending",
         },
-    }],
-    progress: {
-        currentPage: {
-            type: Number,
-            default: 0,
-        },
-        totalPages: {
-            type: Number,
-            default: 0,
-        },
-        percentage: {
-            type: Number,
-            default: 0,
-        },
+        startedAt: { type: Date },
+        completedAt: { type: Date },
+        programCount: { type: Number },
+        error: { type: String },
+        logs: [
+            {
+                message: { type: String, required: true },
+                level: { type: String, enum: ["info", "warn", "error"], default: "info" },
+                timestamp: { type: Date, default: Date.now },
+            },
+        ],
     },
-    initiatedBy: {
-        type: Schema.Types.ObjectId,
-        required: true,
-        ref: "User",
-    },
-}, {
-    timestamps: true,
-});
+    { timestamps: true }
+);
 
-// Indexes
-ScrapeJobSchema.index({ status: 1, createdAt: -1 });
-ScrapeJobSchema.index({ termId: 1, status: 1 });
-
-// Static methods
-ScrapeJobSchema.statics.findScrapeJob = function (termId: string) {
-    return this.findOne({ termId }).sort({ createdAt: -1 });
-};
-
-ScrapeJobSchema.statics.findActiveScrapeJob = function () {
-    return this.findOne({
-        status: { $in: ["pending", "running"] }
-    }).sort({ createdAt: -1 });
-};
-
-ScrapeJobSchema.statics.updateScrapeJob = function (
-    termId: string,
-    data: Partial<IScrapeJob>
-) {
-    return this.findOneAndUpdate({ termId }, data, { new: true });
-};
-
-ScrapeJobSchema.statics.addLog = function (
+// Static: push a log entry to the most-recent ScrapeJob for a given termId
+ScrapeJobSchema.statics.addLog = async function (
     termId: string,
     message: string,
     level: "info" | "warn" | "error" = "info"
-) {
-    return this.findOneAndUpdate(
-        { termId },
+): Promise<void> {
+    await this.findOneAndUpdate(
+        { termId, status: { $in: ["pending", "running"] } },
         {
             $push: {
-                logs: {
-                    timestamp: new Date(),
-                    message,
-                    level,
-                },
+                logs: { message, level, timestamp: new Date() },
             },
         },
-        { new: true }
+        { sort: { createdAt: -1 } }
     );
+    const prefix = level === "error" ? "❌" : level === "warn" ? "⚠️" : "ℹ️";
+    console.log(`${prefix} [${termId}] ${message}`);
 };
 
-ScrapeJobSchema.statics.updateProgress = function (
-    termId: string,
-    currentPage: number,
-    totalPages: number
-) {
-    const percentage = totalPages > 0 ? Math.round((currentPage / totalPages) * 100) : 0;
-    
-    return this.findOneAndUpdate(
-        { termId },
-        {
-            $set: {
-                "progress.currentPage": currentPage,
-                "progress.totalPages": totalPages,
-                "progress.percentage": percentage,
-            },
-        },
-        { new: true }
-    );
-};
-
-function createScrapeJobModel(): IScrapeJobModelType {
-    if (mongoose.models && mongoose.models.ScrapeJob) {
-        return mongoose.models.ScrapeJob as IScrapeJobModelType;
+function createScrapeJobModel(): ScrapeJobModelType {
+    if (mongoose.models?.ScrapeJob) {
+        return mongoose.models.ScrapeJob as ScrapeJobModelType;
     }
-    return mongoose.model<IScrapeJob, IScrapeJobModelType>("ScrapeJob", ScrapeJobSchema);
+    return mongoose.model<IScrapeJob, ScrapeJobModelType>("ScrapeJob", ScrapeJobSchema);
 }
 
 export const ScrapeJob = createScrapeJobModel();
