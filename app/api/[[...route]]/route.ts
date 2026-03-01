@@ -6,7 +6,7 @@ import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import { handle } from 'hono/vercel';
 import authRoutes from '@/routes/auth.routes';
-import scraperRoutes from '@/routes/scrape.routes';
+import programsRouter from '@/routes/program.routes';
 
 declare module "hono" {
     interface ContextVariableMap {
@@ -31,7 +31,7 @@ app.get('/health', authenticate, (c) => {
 
 
 app.route('/', authRoutes);
-app.route('/', scraperRoutes);
+app.route('/', programsRouter);
 
 // Not found
 app.notFound((c) =>

@@ -56,8 +56,20 @@ const TermSchema = new Schema<ITerm>(
     },
     {
         timestamps: true,
+        toJSON: {
+            virtuals: true,
+        },
+        toObject: {
+            virtuals: true,
+        },
     }
 );
+
+TermSchema.virtual("programs", {
+    ref: "Program",
+    localField: "termId",
+    foreignField: "termId",
+});
 
 
 // Static methods

@@ -724,10 +724,12 @@ export class Scraper {
                 totalPages: pg ? +pg[2]! : 1,
                 totalRecords: rec ? +rec[1]! : 0,
                 recordsPerPage: 12,
+                hasNextPage: false,
+                hasPreviousPage: false,
             };
         } catch {
             const n = await this.countCards();
-            return { currentPage: 1, totalPages: 1, totalRecords: n, recordsPerPage: n };
+            return { currentPage: 1, totalPages: 1, totalRecords: n, recordsPerPage: n, hasNextPage: false, hasPreviousPage: false };
         }
     }
 

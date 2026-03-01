@@ -7,9 +7,6 @@ function Page() {
   const { data, status } = useSession();
   return (
     <div className='w-full flex flex-col'>
-      <pre>
-        {JSON.stringify(data, null, 2)}
-      </pre>
     </div>
   )
 }

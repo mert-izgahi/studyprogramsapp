@@ -64,7 +64,6 @@ const ProgramSchema = new Schema<IProgram>({
     universityId: {
         type: String,
         required: true,
-
     },
     universityLogo: {
         type: String,
@@ -73,17 +72,14 @@ const ProgramSchema = new Schema<IProgram>({
     programDegree: {
         type: String,
         required: true,
-
     },
     language: {
         type: String,
         required: true,
-
     },
     campus: {
         type: String,
         trim: true,
-
     },
     tuitionFee: {
         type: Number,
@@ -141,7 +137,21 @@ const ProgramSchema = new Schema<IProgram>({
     },
 }, {
     timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
 });
+
+// Virtuals
+ProgramSchema.virtual("term", {
+    ref: "Term",
+    localField: "termId",
+    foreignField: "_id",
+    justOne: true,
+})
+
+ProgramSchema.pre("find", function () {
+    this.populate("term");
+})
 
 
 // Static methods

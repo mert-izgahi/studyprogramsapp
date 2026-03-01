@@ -1,11 +1,11 @@
 import dbConnect from "@/lib/mongoose";
 import { Program, IProgram } from "@/models/Program";
-import { FilterFields } from "@/models/FilterFields";
+import { PaginationInfo } from "@/types";
 import mongoose from "mongoose";
 
 export interface ProgramFilters {
     termId?: string;
-    university?: string;
+    universities?: string;
     degree?: string;
     language?: string;
     campus?: string;
@@ -23,15 +23,8 @@ export interface PaginationOptions {
 }
 
 export interface ProgramListResponse {
-    programs: IProgram[];
-    pagination: {
-        total: number;
-        page: number;
-        limit: number;
-        totalPages: number;
-        hasNextPage: boolean;
-        hasPreviousPage: boolean;
-    };
+    rows: IProgram[];
+    pagination: PaginationInfo;
 }
 
 export class ProgramService {
@@ -39,8 +32,6 @@ export class ProgramService {
         filters: ProgramFilters = {},
         options: PaginationOptions = {},
     ): Promise<ProgramListResponse> {
-        await dbConnect();
-
         const {
             page = 1,
             limit = 20,
@@ -54,8 +45,8 @@ export class ProgramService {
             query.termId = filters.termId;
         }
 
-        if (filters.university) {
-            query.universityName = filters.university;
+        if (filters.universities) {
+            query.universityName = { $in: filters.universities.split(",") };
         }
 
         if (filters.degree) {
@@ -85,25 +76,30 @@ export class ProgramService {
         }
 
         if (filters.search) {
-            query.$text = { $search: filters.search };
+            query.$or = [
+                { programName: { $regex: filters.search, $options: "i" } },
+                { universityName: { $regex: filters.search, $options: "i" } },
+                { programDegree: { $regex: filters.search, $options: "i" } },
+                { language: { $regex: filters.search, $options: "i" } },
+                { campus: { $regex: filters.search, $options: "i" } },
+            ]
         }
 
         const skip = (page - 1) * limit;
 
         const sort: any = {};
         sort[sortBy] = sortOrder === "asc" ? 1 : -1;
-
         const [programs, total] = await Promise.all([
             Program.find(query).sort(sort).skip(skip).limit(limit).lean(),
             Program.countDocuments(query),
         ]);
 
         return {
-            programs: programs as IProgram[],
+            rows: programs as IProgram[],
             pagination: {
-                total,
-                page,
-                limit,
+                totalRecords: total,
+                currentPage: page,
+                recordsPerPage: limit,
                 totalPages: Math.ceil(total / limit),
                 hasNextPage: page < Math.ceil(total / limit),
                 hasPreviousPage: page > 1,
@@ -122,7 +118,7 @@ export class ProgramService {
     }
 
     static async getProgramsByIds(ids: string[]): Promise<IProgram[]> {
-        await dbConnect();
+
 
         const validIds = ids.filter((id) => mongoose.Types.ObjectId.isValid(id));
 
@@ -133,26 +129,17 @@ export class ProgramService {
     }
 
     static async getFilterOptions(termId: string): Promise<any> {
-        await dbConnect();
 
-        const filterFields = await FilterFields.findOne({ termId }).lean();
-
-        if (!filterFields) {
-            return {
-                universities: [],
-                programs: [],
-                degrees: [],
-                languages: [],
-                campuses: [],
-            };
-        }
-
+        const programs = await Program.find({ termId, isActive: true }).lean();
+        const universities = programs.map((program) => program.universityName);
+        const degrees = programs.map((program) => program.programDegree);
+        const languages = programs.map((program) => program.language);
+        const campuses = programs.map((program) => program.campus);
         return {
-            universities: filterFields.universities,
-            programs: filterFields.programs,
-            degrees: filterFields.degrees,
-            languages: filterFields.languages,
-            campuses: filterFields.campuses,
+            universities: Array.from(new Set(universities)),
+            degrees: Array.from(new Set(degrees)),
+            languages: Array.from(new Set(languages)),
+            campuses: Array.from(new Set(campuses)),
         };
     }
 

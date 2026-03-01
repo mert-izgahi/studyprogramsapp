@@ -36,7 +36,7 @@ export default function RootHeader() {
             href: "/",
         },
         {
-            title: locale === "en" ? "Programs" : "البرامج",
+            title: locale === "en" ? "Programs" : "البرامج الدراسية",
             href: "/programs",
         },
         {
@@ -57,7 +57,7 @@ export default function RootHeader() {
 
         return pathname.startsWith(href);
     }
-    
+
     function handleSignOut() {
         if (isLoading) return;
         signOut();

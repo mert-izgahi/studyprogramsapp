@@ -1,9 +1,9 @@
 import React from 'react'
-import AdminUsersPage from './client'
+import TermsPage from './client'
 
 function page() {
   return (
-    <AdminUsersPage />
+    <TermsPage />
   )
 }
 

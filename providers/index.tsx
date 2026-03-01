@@ -4,6 +4,7 @@ import React, { PropsWithChildren } from 'react'
 import { ThemeProvider } from './theme-provider';
 import { SessionProvider } from 'next-auth/react';
 import { Toaster } from '@/components/ui/sonner';
+import { ReactQueryProvider } from './react-query-provider';
 
 function Providers({
     children,
@@ -16,9 +17,11 @@ function Providers({
             disableTransitionOnChange
         >
             <Toaster />
-            <SessionProvider>
-                {children}
-            </SessionProvider>
+            <ReactQueryProvider>
+                <SessionProvider>
+                    {children}
+                </SessionProvider>
+            </ReactQueryProvider>
         </ThemeProvider>
     )
 }
