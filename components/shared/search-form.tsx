@@ -6,6 +6,7 @@ import { Button } from '../ui/button'
 import { Search as SearchIcon, X } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useDebounce } from '@/hooks/use-debounce'
+import { cn } from '@/lib/utils'
 
 interface SearchFormProps {
     placeholder?: string
@@ -17,6 +18,7 @@ interface SearchFormProps {
     buttonText?: string
     onSearch?: (term: string) => void
     autoSubmit?: boolean
+    locale?: string
 }
 
 function SearchForm({
@@ -28,7 +30,8 @@ function SearchForm({
     showSubmitButton = true,
     buttonText = "Search",
     onSearch,
-    autoSubmit = false
+    autoSubmit = false,
+    locale = "en"
 }: SearchFormProps) {
     const router = useRouter()
     const searchParams = useSearchParams()
@@ -84,6 +87,11 @@ function SearchForm({
     const onClear = useCallback(() => {
         setSearchTerm("")
         handleSearch("")
+        // Focus the input after clearing
+        const input = document.querySelector('input[type="search"]') as HTMLInputElement
+        if (input) {
+            input.focus()
+        }
     }, [handleSearch])
 
     // Handle key down (for Enter key)
@@ -105,20 +113,28 @@ function SearchForm({
     const onFocus = useCallback(() => setIsFocused(true), [])
     const onBlur = useCallback(() => setIsFocused(false), [])
 
+    // Determine if RTL
+    const isRTL = locale === 'ar' // Add other RTL locales as needed
+
     return (
         <form
             onSubmit={onSubmit}
             className={`relative flex w-full items-center space-x-2 ${className}`}
             role="search"
         >
-            <div className="relative flex-1">
-                {/* Search Icon */}
+            <div className={cn("relative flex-1",
+                isRTL ? 'ml-2' : 'mr-2'
+            )}>
+                {/* Search Icon - Position based on RTL */}
                 <SearchIcon
-                    className={`absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transition-colors ${isFocused ? 'text-primary' : 'text-muted-foreground'
-                        }`}
+                    className={cn(
+                        "absolute top-1/2 h-4 w-4 -translate-y-1/2 transition-colors",
+                        isRTL ? 'right-3' : 'left-3',
+                        isFocused ? 'text-primary' : 'text-muted-foreground'
+                    )}
                 />
 
-                {/* Input */}
+                {/* Input - Add padding based on RTL */}
                 <Input
                     type="search"
                     value={searchTerm}
@@ -127,17 +143,23 @@ function SearchForm({
                     onFocus={onFocus}
                     onBlur={onBlur}
                     placeholder={placeholder}
-                    className={`pl-10 pr-10 ${showSubmitButton ? '' : 'pr-4'}`}
+                    className={cn(
+                        isRTL ? 'pr-10' : 'pl-10', // Padding for search icon
+                        searchTerm && (isRTL ? 'pl-10' : 'pr-10') // Padding for clear button
+                    )}
                     aria-label={placeholder}
                 />
 
-                {/* Clear button - only show when there's text */}
+                {/* Clear button - Position based on RTL */}
                 {searchTerm && (
                     <Button
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 hover:bg-transparent"
+                        className={cn(
+                            "absolute top-1/2 h-7 w-7 -translate-y-1/2 hover:bg-transparent",
+                            isRTL ? 'left-1' : 'right-1'
+                        )}
                         onClick={onClear}
                         aria-label="Clear search"
                     >

@@ -39,7 +39,6 @@ const ProgramSchema = new Schema<IProgram>({
     programId: {
         type: String,
         required: true,
-
     },
     termId: {
         type: Schema.Types.ObjectId,

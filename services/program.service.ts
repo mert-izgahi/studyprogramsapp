@@ -1,98 +1,106 @@
 import dbConnect from "@/lib/mongoose";
 import { Program, IProgram } from "@/models/Program";
-import { PaginationInfo } from "@/types";
+import { Term } from "@/models/Term";
+import { PaginationInfo, PaginationOptions } from "@/types";
 import mongoose from "mongoose";
 
 export interface ProgramFilters {
     termId?: string;
     universities?: string;
-    degree?: string;
-    language?: string;
-    campus?: string;
+    languages?: string;
+    campuses?: string;
     minPrice?: number;
     maxPrice?: number;
     quotaFull?: boolean;
     search?: string;
 }
 
-export interface PaginationOptions {
-    page?: number;
-    limit?: number;
-    sortBy?: string;
-    sortOrder?: "asc" | "desc";
-}
 
 export interface ProgramListResponse {
     rows: IProgram[];
     pagination: PaginationInfo;
 }
+const getProgramsQuery = async (filters: ProgramFilters, options: PaginationOptions) => {
+    const {
+        page = 1,
+        limit = 20,
+        sortBy = "discountedTuitionFee",
+        sortOrder = "asc",
+    } = options;
 
+    const query: any = { isActive: true };
+
+    if (filters.universities) {
+        query.universityName = { $in: filters.universities.split(",") };
+    }
+
+    if (filters.languages) {
+        query.language = { $in: filters.languages.split(",") };
+    }
+    
+    
+    if (filters.campuses) {
+        query.campus = { $in: filters.campuses.split(",") };
+    }
+
+    if (filters.quotaFull !== undefined) {
+        query.quotaFull = filters.quotaFull;
+    }
+
+    if (filters.minPrice !== undefined || filters.maxPrice !== undefined) {
+        query.tuitionFee = {};
+        if (filters.minPrice !== undefined) {
+            query.tuitionFee.$gte = filters.minPrice;
+        }
+        if (filters.maxPrice !== undefined) {
+            query.tuitionFee.$lte = filters.maxPrice;
+        }
+    }
+
+    if (filters.search) {
+        query.$or = [
+            { programName: { $regex: filters.search, $options: "i" } },
+            { universityName: { $regex: filters.search, $options: "i" } },
+            { programDegree: { $regex: filters.search, $options: "i" } },
+            { language: { $regex: filters.search, $options: "i" } },
+            { campus: { $regex: filters.search, $options: "i" } },
+        ]
+    }
+
+    if (filters.termId) {
+        const term = await Term.findById(filters.termId);
+        if (term) {
+            query.termId = term._id.toString();
+        }
+    }
+
+    const skip = (page - 1) * limit;
+
+    const sort: any = {};
+    sort[sortBy] = sortOrder === "asc" ? 1 : -1;
+
+    return {
+        query,
+        options: {
+            page,
+            limit,
+            skip,
+            sort,
+        },
+    }
+}
 export class ProgramService {
     static async getPrograms(
         filters: ProgramFilters = {},
         options: PaginationOptions = {},
     ): Promise<ProgramListResponse> {
-        const {
-            page = 1,
-            limit = 20,
-            sortBy = "discountedTuitionFee",
-            sortOrder = "asc",
-        } = options;
-
-        const query: any = { isActive: true };
-
-        if (filters.termId) {
-            query.termId = filters.termId;
-        }
-
-        if (filters.universities) {
-            query.universityName = { $in: filters.universities.split(",") };
-        }
-
-        if (filters.degree) {
-            query.programDegree = filters.degree;
-        }
-
-        if (filters.language) {
-            query.language = filters.language;
-        }
-
-        if (filters.campus) {
-            query.campus = filters.campus;
-        }
-
-        if (filters.quotaFull !== undefined) {
-            query.quotaFull = filters.quotaFull;
-        }
-
-        if (filters.minPrice !== undefined || filters.maxPrice !== undefined) {
-            query.discountedTuitionFee = {};
-            if (filters.minPrice !== undefined) {
-                query.discountedTuitionFee.$gte = filters.minPrice;
-            }
-            if (filters.maxPrice !== undefined) {
-                query.discountedTuitionFee.$lte = filters.maxPrice;
-            }
-        }
-
-        if (filters.search) {
-            query.$or = [
-                { programName: { $regex: filters.search, $options: "i" } },
-                { universityName: { $regex: filters.search, $options: "i" } },
-                { programDegree: { $regex: filters.search, $options: "i" } },
-                { language: { $regex: filters.search, $options: "i" } },
-                { campus: { $regex: filters.search, $options: "i" } },
-            ]
-        }
-
-        const skip = (page - 1) * limit;
-
-        const sort: any = {};
-        sort[sortBy] = sortOrder === "asc" ? 1 : -1;
+        const { query, options: paginationOptions } = await getProgramsQuery(filters, options);
+        const { page, limit, skip, sort } = paginationOptions;
         const [programs, total] = await Promise.all([
             Program.find(query).sort(sort).skip(skip).limit(limit).lean(),
             Program.countDocuments(query),
         ]);
+        
 
         return {
             rows: programs as IProgram[],
@@ -128,9 +136,8 @@ export class ProgramService {
         }).lean();
     }
 
-    static async getFilterOptions(termId: string): Promise<any> {
-
-        const programs = await Program.find({ termId, isActive: true }).lean();
+    static async getFilterOptions(): Promise<any> {
+        const programs = await Program.find({ isActive: true }).lean();
         const universities = programs.map((program) => program.universityName);
         const degrees = programs.map((program) => program.programDegree);
         const languages = programs.map((program) => program.language);
@@ -142,6 +149,8 @@ export class ProgramService {
             campuses: Array.from(new Set(campuses)),
         };
     }
+
+
 
     static async getProgramStats(termId: string): Promise<any> {
         await dbConnect();

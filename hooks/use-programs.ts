@@ -1,10 +1,10 @@
 "use client";
 
-import { PaginationOptions, ProgramFilters } from '@/services/program.service';
+import { ProgramFilters } from '@/services/program.service';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { IProgram } from '@/models/Program';
-import { PaginationInfo } from '@/types';
+import { PaginationInfo, PaginationOptions } from '@/types';
 
 export interface ProgramsResponse {
     rows: IProgram[];
@@ -12,11 +12,13 @@ export interface ProgramsResponse {
 }
 
 export interface FilterOptionResponse {
-    universities: string[];
-    programs: string[];
-    degrees: string[];
-    languages: string[];
-    campuses: string[];
+    universities?: string[];
+    programs?: string[];
+    degrees?: string[];
+    minPrice?: number;
+    maxPrice?: number;
+    languages?: string[];
+    campuses?: string[];
 }
 
 const getPrograms = (
@@ -29,7 +31,6 @@ const getPrograms = (
             const res = await apiClient.get('/programs', {
                 params: { ...filters, ...options }
             });
-
             return res.data.data; // ✅ correct
         },
     });
@@ -40,7 +41,7 @@ const getFilterOptions = () => {
         queryKey: ['filter-options'],
         queryFn: async () => {
             const res = await apiClient.get('/filter-options');
-            const {data} = res.data;
+            const { data } = res.data;
             return data;
         },
     });
