@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Input } from "../ui/input";
+import { Button } from "../ui/button";
 
 interface PriceFilterFieldProps {
     placeholder?: string
@@ -9,9 +10,10 @@ interface PriceFilterFieldProps {
     paramName: string
     minPrice: number
     maxPrice: number
+    applyLabel?: string
 }
 
-export function PriceFilterField({ placeholder, label, baseUrl, paramName, minPrice, maxPrice }: PriceFilterFieldProps) {
+export function PriceFilterField({ placeholder, label, baseUrl, paramName, minPrice, maxPrice, applyLabel }: PriceFilterFieldProps) {
     const [min, setMin] = useState<number | string>(minPrice);
     const [max, setMax] = useState<number | string>(maxPrice);
     const router = useRouter();
@@ -64,19 +66,10 @@ export function PriceFilterField({ placeholder, label, baseUrl, paramName, minPr
         router.push(url);
     }, [router, searchParams, paramName, baseUrl, min, max]);
 
-    // Debounced filter application (optional)
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            applyPriceFilter();
-        }, 500);
-
-        return () => clearTimeout(timer);
-    }, [min, max, applyPriceFilter]);
-
     return (
-        <div className="space-y-2">
+        <div className="flex flex-col justify-between h-16">
             {label && <p className="text-sm font-semibold">{label}</p>}
-            <div className="flex items-center gap-2">
+            <div className="grid grid-cols-3 md:grid-cols-3 gap-2">
                 <Input
                     type="number"
                     placeholder="Min"
@@ -86,7 +79,6 @@ export function PriceFilterField({ placeholder, label, baseUrl, paramName, minPr
                     max={typeof max === 'number' ? max : undefined}
                     className="w-full"
                 />
-                <span className="text-gray-500">-</span>
                 <Input
                     type="number"
                     placeholder="Max"
@@ -95,6 +87,10 @@ export function PriceFilterField({ placeholder, label, baseUrl, paramName, minPr
                     min={typeof min === 'number' ? min : 0}
                     className="w-full"
                 />
+
+                <Button type="button" onClick={applyPriceFilter}>
+                    {applyLabel || "Apply"}
+                </Button>
             </div>
             {placeholder && (
                 <p className="text-sm text-gray-500">{placeholder}</p>

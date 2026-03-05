@@ -1,12 +1,14 @@
 "use client";
 
 
+import DegreeFilterInput from '@/components/fields/degree-filter-field';
 import MultiFilterInput from '@/components/fields/multi-filter-field';
 import { PriceFilterField } from '@/components/fields/price-filter-field';
 import TermsFilterInput from '@/components/fields/terms-filter-input';
 import UniversitiesFilterInput from '@/components/fields/universities-filter-input';
 import Container from '@/components/shared/container'
 import { Pagination } from '@/components/shared/pagination';
+import ProgramCard from '@/components/shared/program-card';
 import SearchForm from '@/components/shared/search-form';
 import { Skeleton } from '@/components/ui/skeleton';
 import { usePrograms } from '@/hooks/use-programs';
@@ -29,6 +31,11 @@ function ProgramsPage() {
     const campuses = useMemo(() => {
         return filterOptions?.campuses || []
     }, [filterOptions]);
+
+    const degrees = useMemo(() => {
+        return filterOptions?.degrees || []
+    }, [filterOptions]);
+
     const locale = useLocale();
     const searchParams = useSearchParams();
 
@@ -47,6 +54,7 @@ function ProgramsPage() {
             universities: searchParams.get('universities') || undefined,
             languages: searchParams.get('languages') || undefined,
             campuses: searchParams.get('campuses') || undefined,
+            degrees: searchParams.get('degrees') || undefined,
             minPrice,
             maxPrice,
             quotaFull: searchParams.get('quotaFull') === 'true'
@@ -85,40 +93,64 @@ function ProgramsPage() {
                 <h1 className="text-2xl font-bold">{title}</h1>
                 <p className="text-sm text-muted-foreground">{desc}</p>
             </div>
+            <div className='border border-muted p-4 rounded-lg'>
+                <div className="flex flex-col gap-4">
+                    <SearchForm
+                        baseUrl={`/${locale}/programs`}
+                        placeholder={locale === 'en' ? "Search for programs" : "ابحث عن برامج"}
+                        buttonText={locale === 'en' ? "Search" : "ابحث"}
+                        locale={locale} />
 
-            <SearchForm baseUrl={`/${locale}/programs`} placeholder={locale === 'en' ? "Search for programs" : "ابحث عن برامج"} buttonText={locale === 'en' ? "Search" : "ابحث"}
-                locale={locale} />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <TermsFilterInput label={locale === 'en' ? "Select Term" : "اختر الفصل"} />
 
-            <TermsFilterInput />
+                        <MultiFilterInput
+                            baseUrl={`/${locale}/programs`}
+                            paramName="universities"
+                            options={universities || []}
+                            placeholder={locale === 'en' ? "Select universities" : "اختر الجامعات"}
+                            label={locale === 'en' ? "Select universities" : "اختر الجامعات"}
+                        />
 
-            <MultiFilterInput
-                baseUrl={`/${locale}/programs`}
-                paramName="universities"
-                options={universities || []}
-                placeholder={locale === 'en' ? "Select universities" : "اختر الجامعات"}
-            />
+                        <MultiFilterInput
+                            baseUrl={`/${locale}/programs`}
+                            paramName="languages"
+                            options={languages || []}
+                            placeholder={locale === 'en' ? "Select languages" : "اختر اللغات"}
+                            label={locale === 'en' ? "Select languages" : "اختر اللغات"}
+                        />
 
-            <MultiFilterInput
-                baseUrl={`/${locale}/programs`}
-                paramName="languages"
-                options={languages || []}
-                placeholder={locale === 'en' ? "Select languages" : "اختر اللغات"}
-            />
+                        <MultiFilterInput
+                            baseUrl={`/${locale}/programs`}
+                            paramName="campuses"
+                            options={campuses || []}
+                            placeholder={locale === 'en' ? "Select campuses" : "اختر الفرع"}
+                            label={locale === 'en' ? "Select campuses" : "اختر الفرع"}
+                        />
 
-            <MultiFilterInput
-                baseUrl={`/${locale}/programs`}
-                paramName="campuses"
-                options={campuses || []}
-                placeholder={locale === 'en' ? "Select campuses" : "اختر الكمبوس"}
-            />
+                        <DegreeFilterInput
+                            baseUrl={`/${locale}/programs`}
+                            paramName="degrees"
+                            label={locale === 'en' ? "Select degrees" : "اختر الدرجات العلمية"}
+                            placeholder={locale === 'en' ? "Select degrees" : "اختر الدرجات العلمية"}
+                        />
 
-            <PriceFilterField
-                baseUrl={`/${locale}/programs`}
-                paramName="price"
-                label={locale === 'en' ? "Price" : "السعر"}
-                minPrice={0}
-                maxPrice={10000}
-            />
+                        <PriceFilterField
+                            baseUrl={`/${locale}/programs`}
+                            paramName="price"
+                            label={locale === 'en' ? "Price" : "السعر"}
+                            minPrice={0}
+                            maxPrice={10000}
+                            applyLabel={locale === 'en' ? "Apply" : "تطبيق"}
+                        />
+                    </div>
+
+                </div>
+            </div>
+
+
+
+
             {isLoading && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     {new Array(8).fill(0).map((_, index) => (
@@ -133,17 +165,7 @@ function ProgramsPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
 
                         {data.rows.map((program: IProgram) => (
-
-                            <div
-                                key={program._id.toString()}
-                                className="p-4 border rounded-lg"
-                            >
-                                <h2 className="font-semibold">
-                                    {program.programName}
-                                </h2>
-
-                            </div>
-
+                            <ProgramCard key={program._id.toString()} program={program} />
                         ))}
 
                     </div>

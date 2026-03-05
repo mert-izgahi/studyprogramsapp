@@ -18,6 +18,7 @@ programsRouter
         const universities = c.req.query("universities");
         const languages = c.req.query("languages");
         const campuses = c.req.query("campuses");
+        const degrees = c.req.query("degrees");
         const minPrice = parseInt(c.req.query("minPrice")!) || undefined;
         const maxPrice = parseInt(c.req.query("maxPrice")!) || undefined;
         
@@ -28,6 +29,7 @@ programsRouter
             universities,
             languages,
             campuses,
+            degrees,
             minPrice,
             maxPrice,
             termId

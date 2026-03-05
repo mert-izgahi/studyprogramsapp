@@ -1,12 +1,9 @@
 "use client"
 
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useState } from 'react'
 import { Select, SelectItem, SelectTrigger, SelectValue, SelectContent } from '../ui/select'
 import { useTerms } from '@/hooks/use-terms'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useDebounce } from '@/hooks/use-debounce'
-import { Filter, X } from 'lucide-react'
-import { Button } from '../ui/button'
 import { useLocale } from 'next-intl'
 
 interface TermsFilterInputProps {
@@ -22,6 +19,7 @@ interface TermsFilterInputProps {
     autoSubmit?: boolean
     debounceMs?: number
     disabled?: boolean
+    label?: string
 }
 
 function TermsFilterInput({
@@ -32,7 +30,8 @@ function TermsFilterInput({
     includeAllOption = true,
     allOptionText = "All Terms",
     onFilter,
-    disabled = false
+    disabled = false,
+    label
 }: TermsFilterInputProps) {
     const router = useRouter()
     const searchParams = useSearchParams()
@@ -88,45 +87,52 @@ function TermsFilterInput({
 
 
     return (
-        <Select
-            value={selectedTermId}
-            onValueChange={onValueChange}
-            disabled={disabled || isLoading}
-            dir={locale === "ar" ? "rtl" : "ltr"}
-        >
-            <SelectTrigger
-                className={className}
-                aria-label={placeholder}
-                style={{ width: "100%" }}
+        <div className='flex flex-col justify-between h-16'>
+            {label && (
+                <label className='text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70'>
+                    {label}
+                </label>
+            )}
+            <Select
+                value={selectedTermId}
+                onValueChange={onValueChange}
+                disabled={disabled || isLoading}
+                dir={locale === "ar" ? "rtl" : "ltr"}
             >
-                <SelectValue placeholder={placeholder} />
-            </SelectTrigger>
-            <SelectContent>
-                {includeAllOption && (
-                    <SelectItem value="all">
-                        {allOptionText}
-                    </SelectItem>
-                )}
-                {terms.map((term) => (
-                    <SelectItem
-                        key={term._id.toString()}
-                        value={term._id.toString()}
-                    >
-                        {term.name}
-                    </SelectItem>
-                ))}
-                {terms.length === 0 && !isLoading && (
-                    <div className="px-2 py-4 text-center text-sm text-muted-foreground">
-                        No terms available
-                    </div>
-                )}
-                {isLoading && (
-                    <div className="px-2 py-4 text-center text-sm text-muted-foreground">
-                        Loading terms...
-                    </div>
-                )}
-            </SelectContent>
-        </Select>
+                <SelectTrigger
+                    className={className}
+                    aria-label={placeholder}
+                    style={{ width: "100%" }}
+                >
+                    <SelectValue placeholder={placeholder} />
+                </SelectTrigger>
+                <SelectContent>
+                    {includeAllOption && (
+                        <SelectItem value="all">
+                            {allOptionText}
+                        </SelectItem>
+                    )}
+                    {terms.map((term) => (
+                        <SelectItem
+                            key={term._id.toString()}
+                            value={term._id.toString()}
+                        >
+                            {term.name}
+                        </SelectItem>
+                    ))}
+                    {terms.length === 0 && !isLoading && (
+                        <div className="px-2 py-4 text-center text-sm text-muted-foreground">
+                            No terms available
+                        </div>
+                    )}
+                    {isLoading && (
+                        <div className="px-2 py-4 text-center text-sm text-muted-foreground">
+                            Loading terms...
+                        </div>
+                    )}
+                </SelectContent>
+            </Select>
+        </div>
     )
 }
 

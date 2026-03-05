@@ -9,19 +9,23 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "../ui/popover"
+import { cn } from "@/lib/utils"
+import { useLocale } from "next-intl"
 
 interface MultiFilterInputProps {
     placeholder?: string
     baseUrl: string
     paramName: string
     options: string[]
+    label?: string
 }
 
 export default function MultiFilterInput({
     placeholder = "Select values",
     baseUrl,
     paramName,
-    options
+    options,
+    label
 }: MultiFilterInputProps) {
     const router = useRouter()
     const searchParams = useSearchParams()
@@ -65,53 +69,59 @@ export default function MultiFilterInput({
         setSelected(updated)
         updateUrl(updated)
     }
-
+    const locale = useLocale()
     const clearAll = () => {
         setSelected([])
         updateUrl([])
     }
 
     return (
-        <Popover>
-            <PopoverTrigger asChild>
-                <Button variant="outline">
-                    {selected.length > 0
-                        ? `${selected.length} selected`
-                        : placeholder}
-                </Button>
-            </PopoverTrigger>
+        <div className="flex flex-col justify-between h-16">
+            {label && <label className="text-sm font-medium">{label}</label>}
+            <Popover>
+                <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("w-full ", {
+                        "justify-start": locale === "en",
+                        "justify-end": locale === "ar"
+                    })}>
+                        {selected.length > 0
+                            ? `${selected.length} selected`
+                            : placeholder}
+                    </Button>
+                </PopoverTrigger>
 
-            <PopoverContent className="w-64 max-h-80 overflow-y-auto">
-                {
-                    options.map((program: string) => (
-                        <div
-                            key={program}
-                            className="flex items-center space-x-2 py-1"
-                        >
-                            <Checkbox
-                                checked={selected.includes(program)}
-                                onCheckedChange={() =>
-                                    toggle(program)
-                                }
-                            />
-                            <label className="text-sm">{program}</label>
+                <PopoverContent className="w-64 max-h-80 overflow-y-auto">
+                    {
+                        options.map((program: string) => (
+                            <div
+                                key={program}
+                                className="flex items-center space-x-2 py-1"
+                            >
+                                <Checkbox
+                                    checked={selected.includes(program)}
+                                    onCheckedChange={() =>
+                                        toggle(program)
+                                    }
+                                />
+                                <label className="text-sm">{program}</label>
+                            </div>
+                        ))
+                    }
+
+                    {selected.length > 0 && (
+                        <div className="pt-3 border-t mt-3">
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={clearAll}
+                                className="w-full"
+                            >
+                                Clear filters
+                            </Button>
                         </div>
-                    ))
-                }
-
-                {selected.length > 0 && (
-                    <div className="pt-3 border-t mt-3">
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={clearAll}
-                            className="w-full"
-                        >
-                            Clear filters
-                        </Button>
-                    </div>
-                )}
-            </PopoverContent>
-        </Popover>
+                    )}
+                </PopoverContent>
+            </Popover>
+        </div>
     )
 }

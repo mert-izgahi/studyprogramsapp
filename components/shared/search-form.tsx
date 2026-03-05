@@ -61,10 +61,12 @@ function SearchForm({
         // Construct the URL
         const basePath = baseUrl.split('?')[0]
         const queryString = params.toString()
+        
+        // Only add query string if there are parameters
         const url = queryString ? `${basePath}?${queryString}` : basePath
 
         // Update URL
-        router.push(url)
+        router.push(url, { scroll: false })
 
         // Call onSearch callback if provided
         if (onSearch) {
