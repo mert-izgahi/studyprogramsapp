@@ -18,5 +18,37 @@
         "welcome": "Welcome",
         "loading": "Loading...",
         "error": "An error occurred"
+    },
+    "footer": {
+        "description": "Empowering students worldwide with quality education and innovative learning solutions.",
+        "quickLinks": "Quick Links",
+        "aboutUs": "About Us",
+        "contactUs": "Contact Us",
+        "copyright": "All rights reserved.",
+        "privacy": "Privacy",
+        "terms": "Terms",
+        "nav": {
+            "home": "Home",
+            "programs": "Programs",
+            "signup": "Sign Up",
+            "signin": "Sign In"
+        },
+        "about": {
+            "aboutUs": "About Us",
+            "contactUs": "Contact Us",
+            "faq": "FAQ",
+            "termsOfUse": "Terms of Use",
+            "privacyPolicy": "Privacy Policy"
+        },
+        "contact": {
+            "address": "Riyadh, Saudi Arabia"
+        },
+        "aria": {
+            "footer": "Footer",
+            "socialLinks": "Social media links",
+            "quickLinks": "Quick navigation links",
+            "aboutLinks": "About us links",
+            "contactInfo": "Contact information"
+        }
     }
 }
